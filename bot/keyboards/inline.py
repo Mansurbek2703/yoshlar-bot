@@ -4,8 +4,9 @@ from bot.constants import STATUS_BADGES, STATUS_LABELS, AppealStatus
 from bot.database.models import Appeal
 
 
-def get_admin_appeal_keyboard(appeal_id: int, status: str) -> InlineKeyboardMarkup:
+def get_admin_appeal_keyboard(appeal_id: int, status: str, is_detail: bool = False) -> InlineKeyboardMarkup:
     badge = STATUS_BADGES.get(status, "📌")
+    detail_btn_text = "🔄 Yangilash" if is_detail else "📋 Batafsil"
     buttons = [
         [
             InlineKeyboardButton(text="💬 Javob berish", callback_data=f"adm_reply:{appeal_id}"),
@@ -13,7 +14,7 @@ def get_admin_appeal_keyboard(appeal_id: int, status: str) -> InlineKeyboardMark
         ],
         [
             InlineKeyboardButton(text="📁 Fayllarni ko‘rish", callback_data=f"adm_files:{appeal_id}"),
-            InlineKeyboardButton(text="📋 Batafsil", callback_data=f"adm_detail:{appeal_id}"),
+            InlineKeyboardButton(text=detail_btn_text, callback_data=f"adm_detail:{appeal_id}"),
         ],
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

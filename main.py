@@ -65,7 +65,23 @@ async def on_shutdown(bot: Bot) -> None:
     logger.info("Bot shutdown complete.")
 
 
+from aiogram.exceptions import TelegramBadRequest
+
+
 async def global_error_handler(event: ErrorEvent) -> bool:
+    if isinstance(event.exception, TelegramBadRequest):
+        err_msg = str(event.exception).lower()
+        if "message is not modified" in err_msg:
+            logger.debug("Harmless TelegramBadRequest ignored: message is not modified")
+            if event.update.callback_query:
+                try:
+                    await event.update.callback_query.answer("Ma’lumotlar allaqachon ko‘rsatilmoqda.")
+                except Exception:
+                    pass
+            return True
+        if "query is too old" in err_msg:
+            return True
+
     logger.exception(f"Unhandled exception caught: {event.exception}", exc_info=event.exception)
     try:
         if event.update.message:

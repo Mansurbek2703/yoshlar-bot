@@ -1,6 +1,7 @@
 import logging
 import math
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -133,11 +134,15 @@ async def handle_pagination(callback: CallbackQuery, session: AsyncSession, is_a
         total_pages=total_pages,
         filter_type=filter_type,
     )
-    await callback.message.edit_text(
-        f"📋 <b>Murojaatlar ro‘yxati (Sahifa {page}/{total_pages}):</b>",
-        reply_markup=keyboard,
-        parse_mode="HTML",
-    )
+    try:
+        await callback.message.edit_text(
+            f"📋 <b>Murojaatlar ro‘yxati (Sahifa {page}/{total_pages}):</b>",
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise
     await callback.answer()
 
 
@@ -156,10 +161,16 @@ async def show_appeal_detail(callback: CallbackQuery, session: AsyncSession, is_
         return
 
     text = format_appeal_detail(appeal, for_admin=True)
-    keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status)
+    keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status, is_detail=True)
 
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+        await callback.answer("Tafsilotlar yangilandi.")
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e).lower():
+            await callback.answer("Ma’lumotlar allaqachon ko‘rsatilmoqda.")
+        else:
+            raise
 
 
 @router.callback_query(F.data.startswith("adm_status_menu:"))
@@ -177,11 +188,15 @@ async def show_status_menu(callback: CallbackQuery, session: AsyncSession, is_ad
         return
 
     keyboard = get_status_change_keyboard(appeal.id, appeal.status)
-    await callback.message.edit_text(
-        f"🔄 <b>Murojaat {appeal.public_id} holatini tanlang:</b>",
-        reply_markup=keyboard,
-        parse_mode="HTML",
-    )
+    try:
+        await callback.message.edit_text(
+            f"🔄 <b>Murojaat {appeal.public_id} holatini tanlang:</b>",
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise
     await callback.answer()
 
 
@@ -212,8 +227,12 @@ async def update_appeal_status_handler(
     await callback.answer(f"Status o‘zgartirildi: {label}")
 
     text = format_appeal_detail(appeal, for_admin=True)
-    keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status)
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+    keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status, is_detail=True)
+    try:
+        await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise
 
 
 @router.callback_query(F.data.startswith("adm_files:"))
@@ -461,8 +480,14 @@ async def cb_refresh_admins(
         lines.append("\n<i>Superadmin sifatida yangi admin qo‘shishingiz yoki o‘chirishingiz mumkin:</i>")
 
     keyboard = get_admin_management_keyboard(is_superadmin=is_superadmin)
-    await callback.message.edit_text("\n".join(lines), reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer("Yangilandi.")
+    try:
+        await callback.message.edit_text("\n".join(lines), reply_markup=keyboard, parse_mode="HTML")
+        await callback.answer("Yangilandi.")
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e).lower():
+            await callback.answer("Allaqachon yangilangan.")
+        else:
+            raise
 
 
 @router.callback_query(F.data == "adm_add_admin")
@@ -549,12 +574,16 @@ async def cb_del_admin_menu(
         return
 
     keyboard = get_remove_admin_keyboard(admins)
-    await callback.message.edit_text(
-        "🗑 <b>O‘chirish uchun adminni tanlang:</b>\n"
-        "<i>(Asosiy .env dagi adminlar va superadminni o‘chirib bo‘lmaydi)</i>",
-        reply_markup=keyboard,
-        parse_mode="HTML",
-    )
+    try:
+        await callback.message.edit_text(
+            "🗑 <b>O‘chirish uchun adminni tanlang:</b>\n"
+            "<i>(Asosiy .env dagi adminlar va superadminni o‘chirib bo‘lmaydi)</i>",
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise
     await callback.answer()
 
 
@@ -583,4 +612,8 @@ async def cb_do_remove_admin(
         lines.append(f"• {badge}: <b>{adm['name']}</b>\n   🆔 ID: <code>{adm['telegram_id']}</code>")
 
     keyboard = get_admin_management_keyboard(is_superadmin=is_superadmin)
-    await callback.message.edit_text("\n".join(lines), reply_markup=keyboard, parse_mode="HTML")
+    try:
+        await callback.message.edit_text("\n".join(lines), reply_markup=keyboard, parse_mode="HTML")
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise

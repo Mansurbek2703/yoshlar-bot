@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, List
 from aiogram import F, Router
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -223,9 +224,13 @@ async def cb_user_my_appeals(callback: CallbackQuery, session: AsyncSession, use
     appeals = await appeal_service.get_user_appeals(user_id=user.id)
 
     if not appeals:
-        await callback.message.edit_text(
-            "📋 Sizda hali murojaatlar mavjud emas.",
-        )
+        try:
+            await callback.message.edit_text(
+                "📋 Sizda hali murojaatlar mavjud emas.",
+            )
+        except TelegramBadRequest as e:
+            if "message is not modified" not in str(e).lower():
+                raise
         await callback.answer()
         return
 
@@ -235,11 +240,15 @@ async def cb_user_my_appeals(callback: CallbackQuery, session: AsyncSession, use
         page=1,
         total_pages=1,
     )
-    await callback.message.edit_text(
-        "📋 <b>Sizning murojaatlaringiz:</b>\nBatafsil ko‘rish uchun murojaatni tanlang:",
-        reply_markup=keyboard,
-        parse_mode="HTML",
-    )
+    try:
+        await callback.message.edit_text(
+            "📋 <b>Sizning murojaatlaringiz:</b>\nBatafsil ko‘rish uchun murojaatni tanlang:",
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+    except TelegramBadRequest as e:
+        if "message is not modified" not in str(e).lower():
+            raise
     await callback.answer()
 
 
@@ -257,8 +266,14 @@ async def cb_user_appeal_detail(callback: CallbackQuery, session: AsyncSession, 
     is_closed = appeal.status in [AppealStatus.CLOSED.value, AppealStatus.RESOLVED.value]
     keyboard = get_user_appeal_keyboard(appeal.id, is_closed=is_closed)
 
-    await callback.message.edit_text(detail_text, reply_markup=keyboard, parse_mode="HTML")
-    await callback.answer()
+    try:
+        await callback.message.edit_text(detail_text, reply_markup=keyboard, parse_mode="HTML")
+        await callback.answer()
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e).lower():
+            await callback.answer("Ma’lumotlar allaqachon ko‘rsatilmoqda.")
+        else:
+            raise
 
 
 @router.callback_query(F.data.startswith("usr_files:"))
