@@ -2,14 +2,13 @@ import logging
 from typing import Any, Dict, List
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.constants import STATUS_BADGES, STATUS_LABELS, AppealStatus
 from bot.database.models import User
 from bot.keyboards.default import (
     get_cancel_keyboard,
-    get_draft_control_keyboard,
     get_main_menu,
 )
 from bot.keyboards.inline import (
@@ -94,27 +93,17 @@ def extract_message_data(message: Message) -> Dict[str, Any]:
 async def start_appeal(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(AppealStates.WAITING_FOR_CONTENT)
-    await state.update_data(messages_draft=[])
 
     text = (
-        "✍️ <b>Murojaatingizni yuboring.</b>\n\n"
-        "Matn, rasm, video, audio yoki hujjat yuborishingiz mumkin.\n"
-        "Bir nechta fayl yoki xabar yuborish imkoniyati mavjud."
+        "✍️ <b>Murojaatingizni yuboring:</b>\n\n"
+        "Matn, rasm, video, audio yoki hujjat yuborishingiz mumkin.\n\n"
+        "<i>Xabaringizni yuborishingiz bilan u qabul qilinadi va mas’ullarga yetkaziladi.</i>"
     )
     await message.answer(text, reply_markup=get_cancel_keyboard(), parse_mode="HTML")
 
 
-@router.message(F.text == "➕ Yana fayl/xabar qo‘shish")
-async def add_more_files(message: Message, state: FSMContext):
-    await state.set_state(AppealStates.ADDING_MORE)
-    await message.answer(
-        "Iltimos, keyingi matn yoki faylingizni yuboring:",
-        reply_markup=get_draft_control_keyboard(),
-    )
-
-
-@router.message(F.text == "✅ Murojaatni yuborish")
-async def finish_appeal(
+@router.message(AppealStates.WAITING_FOR_CONTENT)
+async def process_appeal_submission(
     message: Message,
     state: FSMContext,
     session: AsyncSession,
@@ -122,56 +111,6 @@ async def finish_appeal(
     is_admin: bool,
     bot,
 ):
-    data = await state.get_data()
-    draft: List[Dict[str, Any]] = data.get("messages_draft", [])
-
-    if not draft:
-        await message.answer(
-            "⚠️ Murojaat matni yoki fayli kiritilmagan. Iltimos, xabaringizni yuboring.",
-            reply_markup=get_cancel_keyboard(),
-        )
-        return
-
-    appeal_service = AppealService(session)
-    appeal = await appeal_service.create_appeal(
-        user_id=user.id,
-        messages_draft=draft,
-    )
-    await state.clear()
-
-    # Collect preview text and attachment count
-    preview_text = draft[0].get("text") or "(Matnsiz fayl biriktirilgan)"
-    if len(preview_text) > 200:
-        preview_text = preview_text[:197] + "..."
-
-    att_count = sum(len(d.get("attachments", [])) for d in draft)
-
-    # Success confirmation to student
-    confirm_text = (
-        "✅ <b>Murojaatingiz muvaffaqiyatli qabul qilindi.</b>\n\n"
-        f"Murojaat raqami: <b>{appeal.public_id}</b>\n\n"
-        "Yoshlar bo‘limi mas’ullari murojaatingizni ko‘rib chiqadi. "
-        "Javob ushbu bot orqali yuboriladi."
-    )
-    await message.answer(
-        confirm_text,
-        reply_markup=get_main_menu(is_admin=is_admin),
-        parse_mode="HTML",
-    )
-
-    # Notify administrators
-    await notify_admins_new_appeal(
-        bot=bot,
-        session=session,
-        appeal=appeal,
-        preview_text=preview_text,
-        attachments_count=att_count,
-    )
-
-
-@router.message(AppealStates.WAITING_FOR_CONTENT)
-@router.message(AppealStates.ADDING_MORE)
-async def collect_appeal_content(message: Message, state: FSMContext):
     # Check file size limit
     file_size = 0
     if message.document:
@@ -184,34 +123,71 @@ async def collect_appeal_content(message: Message, state: FSMContext):
     if file_size > settings.MAX_FILE_SIZE:
         await message.answer(
             "⚠️ Fayl hajmi 50 MB dan oshmasligi kerak. Iltimos, kichikroq hajmda yuboring.",
-            reply_markup=get_draft_control_keyboard(),
+            reply_markup=get_cancel_keyboard(),
         )
         return
 
-    data = await state.get_data()
-    draft: List[Dict[str, Any]] = data.get("messages_draft", [])
-
     item = extract_message_data(message)
     if not item["text"] and not item["attachments"]:
-        await message.answer("⚠️ Iltimos, matn yoki fayl yuboring.")
+        await message.answer("⚠️ Iltimos, matn yoki fayl yuboring.", reply_markup=get_cancel_keyboard())
         return
 
-    draft.append(item)
-    await state.update_data(messages_draft=draft)
-    await state.set_state(AppealStates.ADDING_MORE)
+    # Create appeal immediately
+    appeal_service = AppealService(session)
+    appeal = await appeal_service.create_appeal(
+        user_id=user.id,
+        messages_draft=[item],
+    )
+    await state.clear()
 
-    total_files = sum(len(d.get("attachments", [])) for d in draft)
-    reply_msg = (
-        "📥 <b>Xabar/fayl qabul qilindi!</b>\n\n"
-        f"Jami yuborilgan xabarlar: <b>{len(draft)} ta</b>\n"
-        f"Biriktirilgan fayllar: <b>{total_files} ta</b>\n\n"
-        "Yana fayl yoki matn qo‘shishingiz mumkin, yoki <b>'✅ Murojaatni yuborish'</b> "
-        "tugmasini bosing."
+    preview_text = item["text"] or "(Biriktirilgan fayl)"
+    if len(preview_text) > 200:
+        preview_text = preview_text[:197] + "..."
+
+    att_count = len(item["attachments"])
+
+    # Confirmation with inline actions to attach more files or view appeals
+    confirm_text = (
+        "✅ <b>Murojaatingiz muvaffaqiyatli qabul qilindi!</b>\n\n"
+        f"Murojaat raqami: <b>{appeal.public_id}</b>\n\n"
+        "Yoshlar bo‘limi mas’ullari murojaatingizni ko‘rib chiqadi. Javob ushbu bot orqali yuboriladi."
+    )
+    
+    inline_kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="➕ Yana fayl/xabar biriktirish",
+                    callback_data=f"usr_followup:{appeal.id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📋 Murojaatlarim",
+                    callback_data="usr_my_appeals",
+                )
+            ]
+        ]
+    )
+
+    await message.answer(
+        confirm_text,
+        reply_markup=get_main_menu(is_admin=is_admin),
+        parse_mode="HTML",
     )
     await message.answer(
-        reply_msg,
-        reply_markup=get_draft_control_keyboard(),
+        "<i>Qo‘shimcha ma’lumot qo‘shish yoki holatni kuzatish:</i>",
+        reply_markup=inline_kb,
         parse_mode="HTML",
+    )
+
+    # Notify administrators immediately
+    await notify_admins_new_appeal(
+        bot=bot,
+        session=session,
+        appeal=appeal,
+        preview_text=preview_text,
+        attachments_count=att_count,
     )
 
 
@@ -357,8 +333,7 @@ async def cb_user_appeal_followup(callback: CallbackQuery, state: FSMContext, se
     await state.set_state(AppealStates.WAITING_FOLLOWUP)
     await state.update_data(appeal_id=appeal.id)
     await callback.message.answer(
-        f"✍️ <b>{appeal.public_id} murojaatiga qo‘shimcha ma’lumotingizni yuboring:</b>\n\n"
-        "Matn, rasm yoki hujjat yuborishingiz mumkin.",
+        f"✍️ <b>{appeal.public_id} murojaatiga qo‘shimcha ma’lumotingiz yoki faylni yuboring:</b>",
         reply_markup=get_cancel_keyboard(),
         parse_mode="HTML",
     )

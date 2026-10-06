@@ -1,6 +1,5 @@
 import logging
 from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from sqlalchemy.ext.asyncio import AsyncSession
 from bot.constants import STATUS_BADGES, STATUS_LABELS
 from bot.database.models import Appeal
@@ -20,6 +19,8 @@ async def notify_admins_new_appeal(
 ) -> None:
     user_service = UserService(session)
     admin_ids = await user_service.get_all_admin_ids()
+    logger.info(f"Target admin IDs for new appeal {appeal.public_id}: {admin_ids}")
+    
     text = format_admin_notification(appeal, preview_text, attachments_count)
     keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status)
 
@@ -31,8 +32,9 @@ async def notify_admins_new_appeal(
                 reply_markup=keyboard,
                 parse_mode="HTML",
             )
+            logger.info(f"Successfully delivered new appeal {appeal.public_id} notification to admin {aid}")
         except Exception as e:
-            logger.warning(f"Could not notify admin {aid} of new appeal: {e}")
+            logger.error(f"Could not notify admin {aid} of new appeal {appeal.public_id}: {e}", exc_info=True)
 
 
 async def notify_admins_followup(
@@ -44,16 +46,18 @@ async def notify_admins_followup(
 ) -> None:
     user_service = UserService(session)
     admin_ids = await user_service.get_all_admin_ids()
+    logger.info(f"Target admin IDs for followup {appeal.public_id}: {admin_ids}")
 
     u = appeal.user
-    full_name = f"{u.first_name or ''} {u.last_name or ''}".strip() or "Noma'lum"
+    full_name = f"{u.first_name or ''} {u.last_name or ''}".strip() if u else "Noma'lum"
+    tg_id = str(u.telegram_id) if u else "Noma'lum"
     att_note = f"\n📎 <i>Biriktirilgan fayllar: {attachments_count} ta</i>" if attachments_count else ""
 
     text = (
         f"💬 <b>MUROJAATGA QO‘SHIMCHA XABAR</b>\n\n"
         f"🆔 <b>Murojaat:</b> <b>{appeal.public_id}</b>\n"
         f"👤 <b>Talaba:</b> {full_name}\n"
-        f"🆔 <b>Telegram ID:</b> <code>{u.telegram_id}</code>\n\n"
+        f"🆔 <b>Telegram ID:</b> <code>{tg_id}</code>\n\n"
         f"📝 <b>Xabar:</b>\n{message_text}{att_note}"
     )
     keyboard = get_admin_appeal_keyboard(appeal.id, appeal.status)
@@ -66,13 +70,16 @@ async def notify_admins_followup(
                 reply_markup=keyboard,
                 parse_mode="HTML",
             )
+            logger.info(f"Successfully delivered followup notification to admin {aid}")
         except Exception as e:
-            logger.warning(f"Could not notify admin {aid} of followup: {e}")
+            logger.error(f"Could not notify admin {aid} of followup: {e}", exc_info=True)
 
 
 async def notify_user_status_changed(
     bot: Bot, appeal: Appeal, new_status: str
 ) -> None:
+    if not appeal.user:
+        return
     badge = STATUS_BADGES.get(new_status, "📌")
     label = STATUS_LABELS.get(new_status, new_status)
     text = (

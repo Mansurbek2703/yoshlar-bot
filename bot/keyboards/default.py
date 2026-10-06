@@ -8,7 +8,6 @@ def get_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
             KeyboardButton(text="📋 Murojaatlarim"),
         ],
         [
-            KeyboardButton(text="ℹ️ Yoshlar bo‘limi"),
             KeyboardButton(text="📞 Bog‘lanish"),
         ],
     ]
@@ -18,7 +17,7 @@ def get_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=keyboard,
         resize_keyboard=True,
-        input_field_placeholder="Bo‘limni tanlang...",
+        input_field_placeholder="Murojaat yuborish yoki bo‘limni tanlang...",
     )
 
 

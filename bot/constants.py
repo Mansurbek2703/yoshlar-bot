@@ -27,31 +27,16 @@ STATUS_BADGES = {
 
 START_TEXT = (
     "👋 <b>Assalomu alaykum!</b>\n\n"
-    "🏛 <b>Al-Xorazmiy universiteti Yoshlar bo‘limining</b> murojaatlar botiga xush kelibsiz.\n\n"
-    "Ushbu bot orqali Yoshlar bo‘limiga murojaat, taklif, ariza va muammolaringizni yuborishingiz mumkin.\n\n"
-    "Kerakli bo‘limni tanlang:"
-)
-
-ABOUT_TEXT = (
-    "ℹ️ <b>Yoshlar bo‘limi haqida</b>\n\n"
-    "Yoshlar bilan ishlash, ma’naviyat va ma’rifat bo‘limi universitet talabalarining "
-    "intellektual, ijodiy va ijtimoiy faolligini oshirish, talabalar turmush sharoitini yaxshilash "
-    "hamda ularni har tomonlama qo‘llab-quvvatlash bilan shug‘ullanadi.\n\n"
-    "<b>Bo‘limning asosiy vazifalari:</b>\n"
-    "• Talabalarning huquq va manfaatlarini himoya qilish;\n"
-    "• Talabalar murojaatlari, taklif va muammolarini o‘z vaqtida ko‘rib chiqish;\n"
-    "• Talabalar turar joyi va ijtimoiy masalalarni muvofiqlashtirish;\n"
-    "• Ma’naviy-ma’rifiy tadbirlar, to‘garaklar va yoshlar loyihalarini tashkil etish;\n"
-    "• Iqtidorli talabalarni rag‘batlantirish va qo‘llab-quvvatlash."
+    "🏛 <b>Al-Xorazmiy universitetining Talabalarni qo‘llab-quvvatlash va o‘quv masalalari bo‘yicha murojaatlar botiga xush kelibsiz.</b>\n\n"
+    "Ushbu bot orqali o‘quv jarayoni, talabalarga yaratilgan imkoniyatlar, ariza, taklif va muammolaringiz bo‘yicha murojaat yuborishingiz mumkin."
 )
 
 CONTACT_TEXT = (
     "📞 <b>Yoshlar bo‘limi bilan bog‘lanish</b>\n\n"
-    "📍 <b>Manzil:</b> Al-Xorazmiy universiteti asosiy binosi\n"
-    "🏢 <b>Xona:</b> Yoshlar bo‘limi (204-xona)\n"
-    "📞 <b>Telefon:</b> +998 71 200 00 00\n"
-    "✉️ <b>Elektron pochta:</b> yoshlar@akhu.uz\n"
-    "🌐 <b>Universitet sayti:</b> <a href=\"https://akhu.uz\">akhu.uz</a>\n"
-    "📢 <b>Rasmiy Telegram kanal:</b> @akhu_yoshlar\n\n"
+    "📍 <b>Manzil:</b> Al-Xorazmiy universiteti o'quv binosi\n"
+    "📞 <b>Telefon:</b> +998 62 227 71 71\n"
+    "✉️ <b>Elektron pochta:</b> r.khudayberganov@akhu.uz\n"
+    "🌐 <b>Universitet sayti:</b> <a href=\"https://akhu.uz/\">akhu.uz</a>\n"
+    "📢 <b>Rasmiy Telegram kanal:</b> @AKHU_students_channel\n\n"
     "⏰ <i>Ish vaqti: Dushanba – Juma, 09:00 dan 18:00 gacha</i>"
 )

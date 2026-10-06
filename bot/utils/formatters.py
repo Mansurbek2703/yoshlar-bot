@@ -69,14 +69,20 @@ def format_admin_notification(
     appeal: Appeal, preview_text: str, attachments_count: int
 ) -> str:
     user = appeal.user
-    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "Noma'lum"
-    username_part = f" (@{user.username})" if user.username else ""
+    if user:
+        full_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "Noma'lum"
+        username_part = f" (@{user.username})" if user.username else ""
+        tg_id = str(user.telegram_id)
+    else:
+        full_name = "Noma'lum"
+        username_part = ""
+        tg_id = "Noma'lum"
 
     text = (
         "🔔 <b>YANGI MUROJAAT</b>\n\n"
         f"🆔 <b>ID:</b> <b>{appeal.public_id}</b>\n"
         f"👤 <b>Foydalanuvchi:</b> {full_name}{username_part}\n"
-        f"🆔 <b>Telegram ID:</b> <code>{user.telegram_id}</code>\n\n"
+        f"🆔 <b>Telegram ID:</b> <code>{tg_id}</code>\n\n"
         f"📝 <b>Murojaat matni:</b>\n{preview_text}\n\n"
         f"📎 <b>Fayllar:</b> {attachments_count} ta\n"
         f"📌 <b>Status:</b> NEW"
