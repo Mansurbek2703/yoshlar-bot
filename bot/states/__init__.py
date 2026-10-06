@@ -3,6 +3,7 @@ from bot.states.states import (
     AdminReplyStates,
     AdminSearchStates,
     BroadcastStates,
+    AdminManagementStates,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "AdminReplyStates",
     "AdminSearchStates",
     "BroadcastStates",
+    "AdminManagementStates",
 ]

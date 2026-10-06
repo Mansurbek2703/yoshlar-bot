@@ -1,6 +1,6 @@
 import os
 from typing import List
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     BOT_TOKEN: str = Field(default="YOUR_BOT_TOKEN_HERE")
     DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:password@localhost:5432/youth_bot")
     ADMIN_IDS_RAW: str = Field(default="", alias="ADMIN_IDS")
+    SUPERADMIN_IDS_RAW: str = Field(default="1202082857", alias="SUPERADMIN_IDS")
     
     # Webhook
     USE_WEBHOOK: bool = Field(default=False)
@@ -30,10 +31,24 @@ class Settings(BaseSettings):
 
     @property
     def admin_ids(self) -> List[int]:
-        if not self.ADMIN_IDS_RAW:
-            return []
         ids = []
-        for item in self.ADMIN_IDS_RAW.split(","):
+        if self.ADMIN_IDS_RAW:
+            for item in self.ADMIN_IDS_RAW.split(","):
+                item = item.strip()
+                if item.isdigit():
+                    ids.append(int(item))
+        # Ensure superadmins are always included in admin_ids
+        for sa in self.superadmin_ids:
+            if sa not in ids:
+                ids.append(sa)
+        return ids
+
+    @property
+    def superadmin_ids(self) -> List[int]:
+        if not self.SUPERADMIN_IDS_RAW:
+            return [1202082857]
+        ids = []
+        for item in self.SUPERADMIN_IDS_RAW.split(","):
             item = item.strip()
             if item.isdigit():
                 ids.append(int(item))

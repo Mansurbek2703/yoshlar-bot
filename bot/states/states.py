@@ -18,3 +18,8 @@ class AdminSearchStates(StatesGroup):
 class BroadcastStates(StatesGroup):
     WAITING_FOR_MESSAGE = State()
     CONFIRMING = State()
+
+
+class AdminManagementStates(StatesGroup):
+    WAITING_FOR_ADMIN_ID = State()
+    WAITING_FOR_ADMIN_NAME = State()

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.constants import STATUS_BADGES, STATUS_LABELS, AppealStatus
 from bot.database.models import Appeal
@@ -90,3 +90,31 @@ def get_broadcast_confirm_keyboard() -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def get_admin_management_keyboard(is_superadmin: bool = False) -> InlineKeyboardMarkup:
+    buttons = []
+    if is_superadmin:
+        buttons.append([
+            InlineKeyboardButton(text="➕ Yangi admin qo‘shish", callback_data="adm_add_admin"),
+            InlineKeyboardButton(text="🗑 Adminni o‘chirish", callback_data="adm_del_admin_menu"),
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="🔄 Yangilash", callback_data="adm_refresh_admins"),
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_remove_admin_keyboard(admins: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
+    buttons = []
+    for adm in admins:
+        if adm.get("can_remove"):
+            btn_text = f"❌ {adm['name']} ({adm['telegram_id']})"
+            buttons.append([
+                InlineKeyboardButton(text=btn_text, callback_data=f"adm_do_remove:{adm['telegram_id']}")
+            ])
+
+    buttons.append([
+        InlineKeyboardButton(text="🔙 Orqaga", callback_data="adm_refresh_admins")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

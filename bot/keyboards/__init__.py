@@ -10,6 +10,8 @@ from bot.keyboards.inline import (
     get_user_appeal_keyboard,
     get_appeals_list_keyboard,
     get_broadcast_confirm_keyboard,
+    get_admin_management_keyboard,
+    get_remove_admin_keyboard,
 )
 
 __all__ = [
@@ -22,4 +24,6 @@ __all__ = [
     "get_user_appeal_keyboard",
     "get_appeals_list_keyboard",
     "get_broadcast_confirm_keyboard",
+    "get_admin_management_keyboard",
+    "get_remove_admin_keyboard",
 ]

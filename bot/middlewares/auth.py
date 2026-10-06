@@ -23,11 +23,15 @@ class AuthMiddleware(BaseMiddleware):
                 first_name=tg_user.first_name,
                 last_name=tg_user.last_name,
             )
+            is_superadmin = user_service.is_superadmin(tg_user.id)
             is_admin = await user_service.is_admin(tg_user.id)
+
             data["user"] = db_user
+            data["is_superadmin"] = is_superadmin
             data["is_admin"] = is_admin
         else:
             data["user"] = None
+            data["is_superadmin"] = False
             data["is_admin"] = False
 
         return await handler(event, data)
