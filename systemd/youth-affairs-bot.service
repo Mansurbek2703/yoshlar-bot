@@ -1,0 +1,17 @@
+[Unit]
+Description=Al-Xorazmiy Universiteti Yoshlar Bo'limi Telegram Boti
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=boss
+WorkingDirectory=/opt/youth-bot
+EnvironmentFile=/opt/youth-bot/.env
+ExecStart=/opt/youth-bot/venv/bin/python /opt/youth-bot/main.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/youth-bot/logs/bot.log
+StandardError=append:/opt/youth-bot/logs/bot_error.log
+
+[Install]
+WantedBy=multi-user.target
